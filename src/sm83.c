@@ -47,7 +47,7 @@ handle_opcode (uint8_t* dt, uint32_t* _idx)
 			break;
 		case 0x02:                     /* LD (BC), A; T-states = 8 */
 			pc++;
-			io[BC] = cpu.regs8.A;
+			io[cpu.regs16.BC] = cpu.regs8.A;
 			t_states (8);
 			break;
 		case 0x03:                     /* INC BC; T-states = 8 */
@@ -75,7 +75,7 @@ handle_opcode (uint8_t* dt, uint32_t* _idx)
 			cpu.regs8.B = io[dt[pc++]];
 			t_states (8);
 			break;
-		case 0x07:                  /* RLCA; T-states = 4 */
+		case 0x07:                  /* RLCA; T-states = 4; Rotate register A left. */
 			pc++;
 			cpu.flags &= ~(Z | N | H);
 			cpu.flags &= cpu.regs8.A & (1 << 0x7)? C: ~C;
@@ -98,7 +98,7 @@ handle_opcode (uint8_t* dt, uint32_t* _idx)
 			break;
 		case 0x0a:                 /* LD A, (BC); T-states = 8 */
 			pc++;
-			cpu.regs8.A = io[BC];
+			cpu.regs8.A = io[cpu.regs16.BC];
 			t_states (8);
 			break;
 		case 0x0b:                 /* DEC BC; T-states = 8 */
@@ -141,6 +141,107 @@ handle_opcode (uint8_t* dt, uint32_t* _idx)
 			 * Enter CPU very low power mode. Also used to switch between double and normal speed CPU modes in GBC.
 			 */
 
+			t_states (4);
+			break;
+		case 0x11:                 /* LD DE, d16; T-states = 12 */
+			pc++;
+			cpu.regs16.DE = *(get_16 (&dt[pc]));
+			pc += 2;
+			t_states (12);
+			break;
+		case 0x12:                 /* LD (DE), A; T-states = 8 */
+			pc++;
+			io[cpu.regs16.DE] = cpu.regs8.A;
+			t_states (8);
+			break;
+		case 0x13:                 /* INC DE; T-states = 8 */
+			pc++;
+			cpu.regs16.DE++;
+			s_states (8);
+			break;
+		case 0x14:                 /* INC D; T-states = 8 */
+			pc++;
+			cpu.flags &= cpu.regs8.D < ++cpu.regs8.D? 0: H;
+			cpu.flags &= cpu.regs8.D == 0? Z: ~Z;
+			cpu.flags &= ~N;
+			t_states (4);
+			break;
+		case 0x15:                 /* DEC D; T-states = 4 */
+			pc++;
+			cpu.regs8.D--;
+			cpu.flags &= cpu.regs8.D == 0? Z: 0;
+			cpu.flags &= N;
+			cpu.flags &= cpu.regs8.D & H? H: ~H;
+			t_states (4);
+			break;
+		case 0x16:                 /* LD D, d8; T-states = 8 */
+			pc++;
+			cpu.regs8.D = io[dt[pc++]];
+			t_states (8);
+			break;
+		case 0x17:                  /* RLA; T-states = 4; Rotate register A left through carry. */
+			/*
+			 * TODO: I don't understand what is difference between RLA and RLCA because it both shifting left.
+			 * 	What I do, if the difference between these opcodes with carry.
+			 */
+			pc++;
+			cpu.flags &= ~(Z | N | H);
+			cpu.flags &= cpu.regs8.A & (1 << 0x7)? C: ~C;
+			cpu.regs8.A <<= 1;
+			t_states (4);
+			break;
+		case 0x18:                  /* JR r8; T-states = 12 */
+			pc++;
+			pc += (int8_t) mem[pc];
+			break;
+		case 0x19:                  /* ADD HL, DE; T-states = 8 */
+			pc++;
+			cpu.regs &= ~N;
+			cpu.regs &= ((cpu.regs16.HL <= 0x8ff) & ((cpu.regs16.HL + cpu.regs16.DE) > 0x8ff)) ? H: ~H;
+			cpu.regs &= (cpu.regs16.HL < (cpu.regs16.HL + cpu.regs16.DE)) ? ~C: C;
+			cpu.regs16.HL += cpu.regs16.DE;
+			t_states (8);
+			break;
+		case 0x1a:                 /* LD A, (DE); T-states = 8 */
+			pc++;
+			cpu.regs8.A = io[cpu.regs16.DE];
+			t_states (8);
+			break;
+		case 0x1b:                 /* DEC DE; T-states = 8 */
+			pc++;
+			cpu.regs16.DE--;
+			t_states (8);
+			break;
+		case 0x1c:                 /* INC E; T-states = 4 */
+			pc++;
+			cpu.flags &= ~N;
+			cpu.flags &= ((cpu.regs8.E >= 0x8) && ((cpu.regs8.E + 1) < cpu.regs8.E))? H: ~H;
+			cpu.flags &= ++cpu.regs8.E = 0 ? Z: ~Z;
+			cpu.regs8.E++;
+			t_states (4);
+			break;
+		case 0x1d:                 /* DEC E; T-states = 4 */
+			pc++;
+			cpu.regs8.E--;
+			cpu.flags &= N;
+			cpu.flags &= (cpu.regs8.E == 0) ? Z: ~Z;
+			cpu.flags &= (cpu.regs8.E & (1 << 4)) ? H: ~H;
+			t_states (4);
+			break;
+		case 0x1e:                 /* LD E, d8; T-states = 8 */
+			pc++;
+			cpu.regs8.E = io[mem[pc++]];
+			t_states (8);
+			break;
+		case 0x1f:                 /* RRA; T-states = 4 */
+			/*
+			 * TODO: I don't understand what is difference between RRA and RRCA because it both shifting right.
+			 * 	What I do, if the difference between these opcodes with carry.
+			 */
+			pc++;
+			cpu.flags &= (cpu.regs8.A & 0x1) ? C: ~C;
+			cpu.flags &= ~(N | H | Z);
+			cpu.regs8.A >>= 1;
 			t_states (4);
 			break;
 
