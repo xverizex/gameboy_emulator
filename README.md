@@ -7,6 +7,6 @@ I am learning how to write operating systems and I want to learn how to write em
 ---
 ### What is realized?
 In current day, I have implemented the following things:
-* carried out opcodes from 0x00 to 0x0f
+* carry out opcodes from 0x00 to 0x1f
 ---
 This work is like a routine work, but I like this work, because I have created beautiful things in the future.
