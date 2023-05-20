@@ -57,6 +57,7 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x04:                    /* INC B; T-states = 4 */
 			pc++;
+			cpu.flags |= (H|Z|N);
 			cpu.flags &= cpu.regs8.B < ++cpu.regs8.B? 0: H;
 			cpu.flags &= cpu.regs8.B == 0? Z: ~Z;
 			cpu.flags &= ~N;
@@ -64,8 +65,9 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x05:                    /* DEC B; T-states = 4 */
 			pc++;
+			cpu.flags |= (Z|N|H);
 			cpu.regs8.B--;
-			cpu.flags &= cpu.regs8.B == 0? Z: 0;
+			cpu.flags &= cpu.regs8.B == 0? Z: ~Z;
 			cpu.flags &= N;
 			cpu.flags &= cpu.regs8.B & H? H: ~H;
 			t_states (4);
@@ -77,6 +79,7 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x07:                  /* RLCA; T-states = 4; Rotate register A left. */
 			pc++;
+			cpu.flags |= (Z|N|H);
 			cpu.flags &= ~(Z | N | H);
 			cpu.flags &= cpu.regs8.A & (1 << 0x7)? C: ~C;
 			cpu.regs8.A <<= 1;
@@ -90,9 +93,10 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x09:                  /* ADD HL, BC; T-states = 8 */
 			pc++;
-			cpu.regs &= ~N;
-			cpu.regs &= ((cpu.regs16.HL <= 0x8ff) & ((cpu.regs16.HL + cpu.regs16.BC) > 0x8ff)) ? H: ~H;
-			cpu.regs &= (cpu.regs16.HL < (cpu.regs16.HL + cpu.regs16.BC)) ? ~C: C;
+			cpu.flags |= (N|C|H);
+			cpu.flags &= ~N;
+			cpu.flags &= ((cpu.regs16.HL <= 0x8ff) & ((cpu.regs16.HL + cpu.regs16.BC) > 0x8ff)) ? H: ~H;
+			cpu.flags &= (cpu.regs16.HL < (cpu.regs16.HL + cpu.regs16.BC)) ? ~C: C;
 			cpu.regs16.HL += cpu.regs16.BC;
 			t_states (8);
 			break;
@@ -108,6 +112,7 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x0c:                 /* INC C; T-states = 4 */
 			pc++;
+			cpu.flags |= (N|H|Z);
 			cpu.flags &= ~N;
 			cpu.flags &= ((cpu.regs8.C >= 0x8) && ((cpu.regs8.C + 1) < cpu.regs8.C))? H: ~H;
 			cpu.flags &= ++cpu.regs8.C = 0 ? Z: ~Z;
@@ -117,6 +122,7 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 		case 0x0d:                 /* DEC C; T-states = 4 */
 			pc++;
 			cpu.regs8.C--;
+			cpu.flags |= (N|H|Z);
 			cpu.flags &= N;
 			cpu.flags &= (cpu.regs8.C == 0) ? Z: ~Z;
 			cpu.flags &= (cpu.regs8.C & (1 << 4)) ? H: ~H;
@@ -129,6 +135,7 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x0f:                 /* RRCA; T-states = 4 */
 			pc++;
+			cpu.flags |= (N|H|Z|C);
 			cpu.flags &= (cpu.regs8.A & 0x1) ? C: ~C;
 			cpu.flags &= ~(N | H | Z);
 			cpu.regs8.A >>= 1;
@@ -161,7 +168,8 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x14:                 /* INC D; T-states = 8 */
 			pc++;
-			cpu.flags &= cpu.regs8.D < ++cpu.regs8.D? 0: H;
+			cpu.flags |= (H|Z|N);
+			cpu.flags &= cpu.regs8.D < ++cpu.regs8.D? ~H: H;
 			cpu.flags &= cpu.regs8.D == 0? Z: ~Z;
 			cpu.flags &= ~N;
 			t_states (4);
@@ -169,7 +177,8 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 		case 0x15:                 /* DEC D; T-states = 4 */
 			pc++;
 			cpu.regs8.D--;
-			cpu.flags &= cpu.regs8.D == 0? Z: 0;
+			cpu.flags |= (Z|N|H);
+			cpu.flags &= cpu.regs8.D == 0? Z: ~Z;
 			cpu.flags &= N;
 			cpu.flags &= cpu.regs8.D & H? H: ~H;
 			t_states (4);
@@ -185,6 +194,8 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			 * 	What I do, if the difference between these opcodes with carry.
 			 */
 			pc++;
+			cpu.flags |= (Z|N|H|C);
+
 			cpu.flags &= ~(Z | N | H);
 			cpu.flags &= cpu.regs8.A & (1 << 0x7)? C: ~C;
 			cpu.regs8.A <<= 1;
@@ -196,6 +207,7 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x19:                  /* ADD HL, DE; T-states = 8 */
 			pc++;
+			cpu.flags |= (N|H|C);
 			cpu.regs &= ~N;
 			cpu.regs &= ((cpu.regs16.HL <= 0x8ff) & ((cpu.regs16.HL + cpu.regs16.DE) > 0x8ff)) ? H: ~H;
 			cpu.regs &= (cpu.regs16.HL < (cpu.regs16.HL + cpu.regs16.DE)) ? ~C: C;
@@ -214,6 +226,7 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x1c:                 /* INC E; T-states = 4 */
 			pc++;
+			cpu.flags |= (N|H|Z);
 			cpu.flags &= ~N;
 			cpu.flags &= ((cpu.regs8.E >= 0x8) && ((cpu.regs8.E + 1) < cpu.regs8.E))? H: ~H;
 			cpu.flags &= ++cpu.regs8.E = 0 ? Z: ~Z;
@@ -223,6 +236,7 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 		case 0x1d:                 /* DEC E; T-states = 4 */
 			pc++;
 			cpu.regs8.E--;
+			cpu.flags |= (N|H|Z);
 			cpu.flags &= N;
 			cpu.flags &= (cpu.regs8.E == 0) ? Z: ~Z;
 			cpu.flags &= (cpu.regs8.E & (1 << 4)) ? H: ~H;
@@ -239,6 +253,7 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			 * 	What I do, if the difference between these opcodes with carry.
 			 */
 			pc++;
+			cpu.flags |= (C|N|H|Z);
 			cpu.flags &= (cpu.regs8.A & 0x1) ? C: ~C;
 			cpu.flags &= ~(N | H | Z);
 			cpu.regs8.A >>= 1;
@@ -269,6 +284,7 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x24:                /* INC H; T-states: 4 */
 			pc++;
+			cpu.flags |= (H|N|Z);
 			cpu.flags &= ((cpu.regs8.H <= 0xf) && (cpu.regs8.H + 1 > 0xf)) ? H: ~H;
 			cpu.flags &= ~N;
 			cpu.flags &= ++cpu.regs8.H == 0? Z: ~Z;
