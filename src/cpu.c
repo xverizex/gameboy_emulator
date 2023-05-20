@@ -290,6 +290,28 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			cpu.flags &= ++cpu.regs8.H == 0? Z: ~Z;
 			t_states (4);
 			break;
+		case 0x25:                /* DEC H; T-states: 4 */
+			pc++;
+			cpu.regs8.H--;
+			cpu.flags |= (Z|N|H);
+			cpu.flags &= cpu.regs8.D == 0? Z: ~Z;
+			cpu.flags &= N;
+			cpu.flags &= cpu.regs8.D & H? H: ~H;
+			t_states (4);
+			break;
+		case 0x26:               /* LD H, n8; T-states: 8 */
+			pc++;
+			cpu.regs8.H = io[mem[pc++]];
+			t_states (8);
+			break;
+		case 0x27:               /* DAA; T-states: 4 */
+			/*
+			 * TODO: Decimal Adjust Accumulator to get a correct BCD representation after an arithmetic instruction.
+			 */
+			pc++;
+			cpu.flags |= (Z|H|C);
+			cpu.flags &= ~H;
+			break;
 
 	}
 
