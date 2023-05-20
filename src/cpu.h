@@ -1,5 +1,5 @@
-#ifndef CPU_SM83_H
-#define CPU_SM83_H
+#ifndef CPU_H
+#define CPU_H
 
 #include <stdint.h>
 
@@ -38,7 +38,7 @@ struct regs_sp16bit {
 #define N               (1 << 6)  /* NEGATIVE FLAG */
 #define Z               (1 << 7)  /* ZERO FLAG */
 
-struct cpu_sm83 {
+struct cpu {
 	struct regs_8bit regs8;
 	struct regs_16bit regs16;
 	struct regs_sp16bit regs_sp;

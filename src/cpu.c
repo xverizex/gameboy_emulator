@@ -16,7 +16,7 @@ enum REGS {
 	HL
 };
 
-static struct cpu_sm83 cpu;
+static struct cpu cpu;
 static uint8_t *io;
 
 static uint16_t*
