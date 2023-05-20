@@ -20,9 +20,9 @@ static struct cpu cpu;
 static uint8_t *io;
 
 static uint16_t*
-get_16 (uint8_t *dt)
+get_16 (uint8_t *mem)
 {
-	return (uint16_t *) dt;
+	return (uint16_t *) mem;
 }
 
 static void 
@@ -31,17 +31,17 @@ t_states (uint32_t cycles)
 }
 
 static int
-handle_opcode (uint8_t* dt, uint32_t* _idx)
+handle_opcode (uint8_t* mem, uint32_t* _idx)
 {
 	uint32_t pc = *_idx;
 
-	switch (dt[idx]) {
+	switch (mem[idx]) {
 		case 0x00:                     /* NOP; T-states = 4 */
 			t_states (4);
 			break;
 		case 0x01:                     /* LD BC, d16; T-states = 12 */
 			pc++;
-			cpu.regs16.BC = *(get_16 (&dt[pc]));
+			cpu.regs16.BC = *(io + *(get_16 (&mem[pc])));
 			pc += 2;
 			t_states (12);
 			break;
@@ -72,7 +72,7 @@ handle_opcode (uint8_t* dt, uint32_t* _idx)
 			break;
 		case 0x06:                   /* LD B, d8; T-states = 8 */
 			pc++;
-			cpu.regs8.B = io[dt[pc++]];
+			cpu.regs8.B = io[mem[pc++]];
 			t_states (8);
 			break;
 		case 0x07:                  /* RLCA; T-states = 4; Rotate register A left. */
@@ -84,7 +84,7 @@ handle_opcode (uint8_t* dt, uint32_t* _idx)
 			break;
 		case 0x08:                  /* LD (a16), SP; T-states = 20 */
 			pc++;
-			*(get_16 (&dt[pc])) = cpu.regs_sp.SP;
+			*(io + *(get_16 (&mem[pc]))) = cpu.regs_sp.SP;
 			pc += 2;
 			t_states (20);
 			break;
@@ -145,7 +145,7 @@ handle_opcode (uint8_t* dt, uint32_t* _idx)
 			break;
 		case 0x11:                 /* LD DE, d16; T-states = 12 */
 			pc++;
-			cpu.regs16.DE = *(get_16 (&dt[pc]));
+			cpu.regs16.DE = *(io + *(get_16 (&mem[pc])));
 			pc += 2;
 			t_states (12);
 			break;
@@ -176,7 +176,7 @@ handle_opcode (uint8_t* dt, uint32_t* _idx)
 			break;
 		case 0x16:                 /* LD D, d8; T-states = 8 */
 			pc++;
-			cpu.regs8.D = io[dt[pc++]];
+			cpu.regs8.D = io[mem[pc++]];
 			t_states (8);
 			break;
 		case 0x17:                  /* RLA; T-states = 4; Rotate register A left through carry. */
@@ -244,7 +244,36 @@ handle_opcode (uint8_t* dt, uint32_t* _idx)
 			cpu.regs8.A >>= 1;
 			t_states (4);
 			break;
-
+		case 0x20:                /* JR NZ, e8; T-states: 12 / 8 */
+			pc++;
+			if (cpu.flags & (N|Z))
+				pc += (int8_t) io[mem[pc++]];
+			t_states (1);
+			break;
+		case 0x21:                /* LD HL, n16; T-states: 12 */
+			pc++;
+			cpu.regs16.HL = *(io + *(get_16 (&mem[pc])));
+			pc += 2;
+			t_states (12);
+			break;
+		case 0x22:                /* LD HL+, A; T-states: 8 */
+			pc++;
+			*(io + cpu.regs16.HL) = cpu.regs8.A;
+			cpu.regs16.HL++;
+			t_states (8);
+			break;
+		case 0x23:                /* INC HL; T-states: 8 */
+			pc++;
+			cpu.regs16.HL++;
+			t_states (8);
+			break;
+		case 0x24:                /* INC H; T-states: 4 */
+			pc++;
+			cpu.flags &= ((cpu.regs8.H <= 0xf) && (cpu.regs8.H + 1 > 0xf)) ? H: ~H;
+			cpu.flags &= ~N;
+			cpu.flags &= ++cpu.regs8.H == 0? Z: ~Z;
+			t_states (4);
+			break;
 
 	}
 
