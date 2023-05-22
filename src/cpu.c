@@ -57,19 +57,18 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x04:                    /* INC B; T-states = 4 */
 			pc++;
-			cpu.flags |= (H|Z|N);
-			cpu.flags &= cpu.regs8.B < ++cpu.regs8.B? 0: H;
-			cpu.flags &= cpu.regs8.B == 0? Z: ~Z;
+			cpu.flags |= ((cpu.regs8.B <= 0xf) && ((cpu.regs8.B + 0x01) > 0xf)? H: 0;
+			cpu.flags |= cpu.regs8.B == 0? Z: 0;
 			cpu.flags &= ~N;
+			cpu.regs8.B++;
 			t_states (4);
 			break;
 		case 0x05:                    /* DEC B; T-states = 4 */
 			pc++;
-			cpu.flags |= (Z|N|H);
-			cpu.regs8.B--;
-			cpu.flags &= cpu.regs8.B == 0? Z: ~Z;
+			cpu.flags |= ((cpu.regs8.B - 1) == 0) ? Z: 0;
 			cpu.flags &= N;
-			cpu.flags &= cpu.regs8.B & H? H: ~H;
+			cpu.flags |= (cpu.regs8.B & (1 << 4))? H: 0;
+			cpu.regs8.B--;
 			t_states (4);
 			break;
 		case 0x06:                   /* LD B, d8; T-states = 8 */
@@ -79,9 +78,8 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x07:                  /* RLCA; T-states = 4; Rotate register A left. */
 			pc++;
-			cpu.flags |= (Z|N|H);
 			cpu.flags &= ~(Z | N | H);
-			cpu.flags &= cpu.regs8.A & (1 << 0x7)? C: ~C;
+			cpu.flags |= cpu.regs8.A & (1 << 7)? C: 0;
 			cpu.regs8.A <<= 1;
 			t_states (4);
 			break;
@@ -93,10 +91,9 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x09:                  /* ADD HL, BC; T-states = 8 */
 			pc++;
-			cpu.flags |= (N|C|H);
 			cpu.flags &= ~N;
-			cpu.flags &= ((cpu.regs16.HL <= 0x8ff) & ((cpu.regs16.HL + cpu.regs16.BC) > 0x8ff)) ? H: ~H;
-			cpu.flags &= (cpu.regs16.HL < (cpu.regs16.HL + cpu.regs16.BC)) ? ~C: C;
+			cpu.flags |= ((cpu.regs16.HL <= 0x8ff) & ((cpu.regs16.HL + cpu.regs16.BC) > 0x8ff)) ? H: 0;
+			cpu.flags |= (cpu.regs16.HL < (cpu.regs16.HL + cpu.regs16.BC)) ? 0: C;
 			cpu.regs16.HL += cpu.regs16.BC;
 			t_states (8);
 			break;
@@ -112,20 +109,18 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x0c:                 /* INC C; T-states = 4 */
 			pc++;
-			cpu.flags |= (N|H|Z);
 			cpu.flags &= ~N;
-			cpu.flags &= ((cpu.regs8.C >= 0x8) && ((cpu.regs8.C + 1) < cpu.regs8.C))? H: ~H;
-			cpu.flags &= ++cpu.regs8.C = 0 ? Z: ~Z;
+			cpu.flags |= ((cpu.regs8.C <= 0xf) && ((cpu.regs8.C + 1) > 0xf))? H: 0;
+			cpu.flags |= ++cpu.regs8.C = 0 ? Z: 0;
 			cpu.regs8.C++;
 			t_states (4);
 			break;
 		case 0x0d:                 /* DEC C; T-states = 4 */
 			pc++;
-			cpu.regs8.C--;
-			cpu.flags |= (N|H|Z);
 			cpu.flags &= N;
-			cpu.flags &= (cpu.regs8.C == 0) ? Z: ~Z;
-			cpu.flags &= (cpu.regs8.C & (1 << 4)) ? H: ~H;
+			cpu.flags |= ((cpu.regs8.C - 1) == 0) ? Z: 0;
+			cpu.flags |= (cpu.regs8.C & (1 << 4)) ? H: 0;
+			cpu.regs8.C--;
 			t_states (4);
 			break;
 		case 0x0e:                 /* LD C, d8; T-states = 8 */
@@ -135,8 +130,7 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x0f:                 /* RRCA; T-states = 4 */
 			pc++;
-			cpu.flags |= (N|H|Z|C);
-			cpu.flags &= (cpu.regs8.A & 0x1) ? C: ~C;
+			cpu.flags |= (cpu.regs8.A & 0x1) ? C: 0;
 			cpu.flags &= ~(N | H | Z);
 			cpu.regs8.A >>= 1;
 			t_states (4);
@@ -168,19 +162,18 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x14:                 /* INC D; T-states = 8 */
 			pc++;
-			cpu.flags |= (H|Z|N);
-			cpu.flags &= cpu.regs8.D < ++cpu.regs8.D? ~H: H;
-			cpu.flags &= cpu.regs8.D == 0? Z: ~Z;
+			cpu.flags |= cpu.regs8.D & (1 << 4) ? H: 0;
+			cpu.flags |= ((cpu.regs8.D + 1) == 0) ? Z: 0;
 			cpu.flags &= ~N;
+			cpu.regs8.D++;
 			t_states (4);
 			break;
 		case 0x15:                 /* DEC D; T-states = 4 */
 			pc++;
-			cpu.regs8.D--;
-			cpu.flags |= (Z|N|H);
-			cpu.flags &= cpu.regs8.D == 0? Z: ~Z;
 			cpu.flags &= N;
-			cpu.flags &= cpu.regs8.D & H? H: ~H;
+			cpu.flags |= ((cpu.regs8.D - 1) == 0) ? Z: 0;
+			cpu.flags |= ((cpu.regs8.D & (1 << 4)) ? H: 0;
+			cpu.regs8.D--;
 			t_states (4);
 			break;
 		case 0x16:                 /* LD D, d8; T-states = 8 */
@@ -194,10 +187,8 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			 * 	What I do, if the difference between these opcodes with carry.
 			 */
 			pc++;
-			cpu.flags |= (Z|N|H|C);
-
 			cpu.flags &= ~(Z | N | H);
-			cpu.flags &= cpu.regs8.A & (1 << 0x7)? C: ~C;
+			cpu.flags |= cpu.regs8.A & (1 << 7)? C: 0;
 			cpu.regs8.A <<= 1;
 			t_states (4);
 			break;
@@ -207,10 +198,9 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x19:                  /* ADD HL, DE; T-states = 8 */
 			pc++;
-			cpu.flags |= (N|H|C);
 			cpu.regs &= ~N;
-			cpu.regs &= ((cpu.regs16.HL <= 0x8ff) & ((cpu.regs16.HL + cpu.regs16.DE) > 0x8ff)) ? H: ~H;
-			cpu.regs &= (cpu.regs16.HL < (cpu.regs16.HL + cpu.regs16.DE)) ? ~C: C;
+			cpu.regs |= ((cpu.regs16.HL <= 0xfff) & ((cpu.regs16.HL + cpu.regs16.DE) > 0xfff)) ? H: 0;
+			cpu.regs |= (cpu.regs16.HL < (cpu.regs16.HL + cpu.regs16.DE)) ? 0: C;
 			cpu.regs16.HL += cpu.regs16.DE;
 			t_states (8);
 			break;
@@ -226,20 +216,18 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x1c:                 /* INC E; T-states = 4 */
 			pc++;
-			cpu.flags |= (N|H|Z);
 			cpu.flags &= ~N;
-			cpu.flags &= ((cpu.regs8.E >= 0x8) && ((cpu.regs8.E + 1) < cpu.regs8.E))? H: ~H;
-			cpu.flags &= ++cpu.regs8.E = 0 ? Z: ~Z;
+			cpu.flags |= ((cpu.regs8.E <= 0xf) && ((cpu.regs8.E + 1) > 0xf))? H: 0;
+			cpu.flags |= ((cpu.regs8.E + 1) == 0) ? Z: 0;
 			cpu.regs8.E++;
 			t_states (4);
 			break;
 		case 0x1d:                 /* DEC E; T-states = 4 */
 			pc++;
-			cpu.regs8.E--;
-			cpu.flags |= (N|H|Z);
 			cpu.flags &= N;
-			cpu.flags &= (cpu.regs8.E == 0) ? Z: ~Z;
-			cpu.flags &= (cpu.regs8.E & (1 << 4)) ? H: ~H;
+			cpu.flags |= ((cpu.regs8.E  - 1) == 0) ? Z: 0;
+			cpu.flags |= (cpu.regs8.E & (1 << 4)) ? H: 0;
+			cpu.regs8.E--;
 			t_states (4);
 			break;
 		case 0x1e:                 /* LD E, d8; T-states = 8 */
@@ -253,8 +241,7 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			 * 	What I do, if the difference between these opcodes with carry.
 			 */
 			pc++;
-			cpu.flags |= (C|N|H|Z);
-			cpu.flags &= (cpu.regs8.A & 0x1) ? C: ~C;
+			cpu.flags |= (cpu.regs8.A & 0x1) ? C: 0;
 			cpu.flags &= ~(N | H | Z);
 			cpu.regs8.A >>= 1;
 			t_states (4);
@@ -284,19 +271,17 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x24:                /* INC H; T-states: 4 */
 			pc++;
-			cpu.flags |= (H|N|Z);
-			cpu.flags &= ((cpu.regs8.H <= 0xf) && (cpu.regs8.H + 1 > 0xf)) ? H: ~H;
 			cpu.flags &= ~N;
-			cpu.flags &= ++cpu.regs8.H == 0? Z: ~Z;
+			cpu.flags |= ((cpu.regs8.H <= 0xf) && (cpu.regs8.H + 1 > 0xf)) ? H: 0;
+			cpu.flags |= ((cpu.regs8.H + 1) == 0)? Z: 0;
+			cpu.regs8.H++;
 			t_states (4);
 			break;
 		case 0x25:                /* DEC H; T-states: 4 */
 			pc++;
-			cpu.regs8.H--;
-			cpu.flags |= (Z|N|H);
-			cpu.flags &= cpu.regs8.D == 0? Z: ~Z;
 			cpu.flags &= N;
-			cpu.flags &= cpu.regs8.D & H? H: ~H;
+			cpu.flags |= ((cpu.regs8.D - 1) == 0) ? Z: 0;
+			cpu.flags |= ((cpu.regs8.D & (1 << 4)) ? H: 0;
 			t_states (4);
 			break;
 		case 0x26:               /* LD H, n8; T-states: 8 */
@@ -309,7 +294,6 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			 * TODO: Decimal Adjust Accumulator to get a correct BCD representation after an arithmetic instruction.
 			 */
 			pc++;
-			cpu.flags |= (Z|H|C);
 			cpu.flags &= ~H;
 			break;
 
