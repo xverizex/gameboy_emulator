@@ -10,5 +10,6 @@ In current day, I have implemented the following things:
 * carry out opcodes from 0x00 to 0x27
 
 I think that I work with a bit manipulations not correct. Just give me time for think about it. :)
+
 ---
 This work is like a routine work, but I like this work, because I have created beautiful things in the future.
