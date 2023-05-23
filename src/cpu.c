@@ -458,6 +458,135 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 				cpu.flags |= C;
 			t_states (4);
 			break;
+		case 0x40:               /* LD B, B; T-states: 4 */
+			pc++;
+			t_states (4);
+			break;
+		case 0x41:               /* LD B, C; T-states: 4 */
+			pc++;
+			cpu.regs8.B = cpu.regs8.C;
+			t_states (4);
+			break;
+		case 0x42:               /* LD B, D; T-states: 4 */
+			pc++;
+			cpu.regs8.B = cpu.regs8.D;
+			t_states (4);
+			break;
+		case 0x43:               /* LD B, E; T-states: 4 */
+			pc++;
+			cpu.regs8.B = cpu.regs8.E;
+			t_states (4);
+			break;
+		case 0x44:               /* LD B, H; T-states: 4 */
+			pc++;
+			cpu.regs8.B = cpu.regs8.H;
+			t_states (4);
+			break;
+		case 0x45:               /* LD B, L; T-states: 4 */
+			pc++;
+			cpu.regs8.B = cpu.regs8.L;
+			t_states (4);
+			break;
+		case 0x46:               /* LD B, [HL]; T-states: 8 */
+			pc++;
+			cpu.regs8.B = io[cpu.regs16.HL];
+			t_states (8);
+			break;
+		case 0x47:               /* LD B, A; T-states: 4 */
+			pc++;
+			cpu.regs8.B = cpu.regs8.A;
+			t_states (4);
+			break;
+		case 0x48:               /* LD C, B; T-states: 4 */
+			pc++;
+			cpu.regs8.C = cpu.regs8.B;
+			t_states (4);
+			break;
+		case 0x49:               /* LD C, C; T-states: 4 */
+			pc++;
+			t_states (4);
+			break;
+		case 0x4a:               /* LD C, D; T-states: 4 */
+			pc++;
+			cpu.regs8.C = cpu.regs8.D;
+			t_states (4);
+			break;
+		case 0x4b:               /* LD C, E; T-states: 4 */
+			pc++;
+			cpu.regs8.C = cpu.regs8.E;
+			t_states (4);
+			break;
+		case 0x4c:               /* LD C, H; T-states: 4 */
+			pc++;
+			cpu.regs8.C = cpu.regs8.H;
+			t_states (4);
+			break;
+		case 0x4d:               /* LD C, L; T-states: 4 */
+			pc++;
+			cpu.regs8.C = cpu.regs8.L;
+			t_states (4);
+			break;
+		case 0x4e:               /* LD C, [HL]; T-states: 8 */
+			pc++;
+			cpu.regs8.C = io[cpu.regs16.HL];
+			t_states (8);
+			break;
+		case 0x4f:               /* LD C, A; T-states: 4 */
+			pc++;
+			cpu.regs8.C = cpu.regs8.A;
+			t_states (4);
+			break;
+		case 0x50:               /* LD D, B; T-states: 4 */
+			pc++;
+			cpu.regs8.D = cpu.regs8.B;
+			t_states (4);
+			break;
+		case 0x51:               /* LD D, C; T-states: 4 */
+			pc++;
+			cpu.regs8.D = cpu.regs8.C;
+			t_states (4);
+			break;
+		case 0x52:               /* LD D, D; T-states: 4 */
+			pc++;
+			t_states (4);
+			break;
+		case 0x53:               /* LD D, E; T-states: 4 */
+			pc++;
+			cpu.regs8.D = cpu.regs8.E;
+			t_states (4);
+			break;
+		case 0x54:               /* LD D, H; T-states: 4 */
+			pc++;
+			cpu.regs8.D = cpu.regs8.H;
+			t_states (4);
+			break;
+		case 0x55:               /* LD D, L; T-states: 4 */
+			pc++;
+			cpu.regs8.D = cpu.regs8.L;
+			t_states (4);
+			break;
+		case 0x56:               /* LD D, [HL]; T-states: 8 */
+			pc++;
+			cpu.regs8.D = io[cpu.regs16.HL];
+			t_states (4);
+			break;
+		case 0x57:               /* LD D, A; T-states: 4 */
+			pc++;
+			cpu.regs8.D = cpu.regs8.A;
+			t_states (4);
+			break;
+		case 0x58:               /* LD E, B; T-states: 4 */
+			pc++;
+			cpu.regs8.E = cpu.regs8.B;
+			t_states (4);
+			break;
+		case 0x59:               /* LD E, C; T-states: 4 */
+			pc++;
+			cpu.regs8.E = cpu.regs8.C;
+			t_states (4);
+			break;
+
+
 	}
 
 	*_idx = pc;

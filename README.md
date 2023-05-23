@@ -7,7 +7,7 @@ I am learning how to write operating systems and I want to learn how to write em
 ---
 ### What implemented?
 In current day, I have implemented the following things:
-* carry out opcodes until 0x3f
+* carry out opcodes until 0x59
 
 ---
 This work is like a routine work, but I like this work, because I have created beautiful things in the future.
