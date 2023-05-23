@@ -248,8 +248,8 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			break;
 		case 0x20:                /* JR NZ, e8; T-states: 12 / 8 */
 			pc++;
-			if (cpu.flags & (N|Z))
-				pc += (int8_t) io[mem[pc++]];
+			if ((cpu.flags & N) && (cpu.flags & Z))
+				pc += (int8_t) io[mem[pc]];
 			t_states (1);
 			break;
 		case 0x21:                /* LD HL, n16; T-states: 12 */
@@ -295,8 +295,169 @@ handle_opcode (uint8_t* mem, uint32_t* _idx)
 			 */
 			pc++;
 			cpu.flags &= ~H;
+			t_states (4);
 			break;
+		case 0x28:               /* JR Z, e8; T-states: 12/8 */
+			pc++;
+			if (cpu.flags & Z)
+				pc += (int8_t) io[mem[pc]];
+			t_states (1);
+			break;
+		case 0x29:               /* ADD HL, HL; T-states: 8 */
+			pc++;
+			cpu.regs &= ~N;
+			cpu.regs |= ((cpu.regs16.HL <= 0xfff) & ((cpu.regs16.HL + cpu.regs16.HL) > 0xfff)) ? H: 0;
+			cpu.regs |= (cpu.regs16.HL < (cpu.regs16.HL + cpu.regs16.HL)) ? 0: C;
+			cpu.regs16.HL += cpu.regs16.HL;
+			t_states (8);
+			break;
+		case 0x2a:               /* LD A, [HL+]; T-states: 8 */
+			pc++;
+			cpu.regs8.A = io[cpu.regs16.HL];
+			cpu.regs16.HL++;
+			break;
+		case 0x2b:               /* DEC HL; T-states: 8 */
+			pc++;
+			cpu.regs16.HL--;
+			break;
+		case 0x2c:               /* INC E; T-states: 4 */
+			pc++;
+			cpu.flags &= ~N;
+			cpu.flags |= ((cpu.regs8.L <= 0xf) && ((cpu.regs8.L + 1) > 0xf))? H: 0;
+			cpu.flags |= ((cpu.regs8.L + 1) == 0) ? Z: 0;
+			cpu.regs8.L++;
+			t_states (4);
+			break;
+		case 0x2d:               /* DEC L; T-states: 4 */
+			pc++;
+			cpu.flags &= N;
+			cpu.flags |= ((cpu.regs8.L  - 1) == 0) ? Z: 0;
+			cpu.flags |= (cpu.regs8.L & (1 << 4)) ? H: 0;
+			cpu.regs8.L--;
+			t_states (4);
+			break;
+		case 0x2e:               /* LD L, n8; T-states: 8 */
+			pc++;
+			cpu.regs8.L = io[mem[pc++]];
+			t_states (8);
+			break;
+		case 0x2f:               /* CPL; T-states: 4 */
+			pc++;
+			cpu.regs8.A = ~cpu.regs8.A;
+			cpu.flags |= (N | H);
+			t_states (4);
+			break;
+		case 0x30:               /* JR NC, e8; T-states: 12/8 */
+			pc++;
+			if ((cpu.flags & N) && (cpu.flags & C))
+				pc += (int8_t) io[mem[pc]];
+			t_states (1);
+			break;
+		case 0x31:               /* LD SP, n16; T-states: 12 */
+			pc++;
+			cpu.regs16.SP = *(io + *(get_16 (&mem[pc])));
+			pc += 2;
+			t_states (12);
+			break;
+		case 0x32:                /* LD HL-, A; T-states: 8 */
+			pc++;
+			*(io + cpu.regs16.HL) = cpu.regs8.A;
+			cpu.regs16.HL--;
+			t_states (8);
+			break;
+		case 0x33:                /* INC SP; T-states: 8 */
+			pc++;
+			cpu.regs16.SP++;
+			t_states (8);
+			break;
+		case 0x34:                /* INC HL; T-states: 12 */
+			pc++;
+			cpu.flags &= ~N;
+			cpu.flags |= ((cpu.regs8.HL <= 0xf) && (cpu.regs8.HL + 1 > 0xf)) ? H: 0;
+			cpu.flags |= ((cpu.regs8.HL + 1) == 0)? Z: 0;
+			cpu.regs8.HL++;
+			t_states (12);
+			break;
+		case 0x35:                /* DEC [HL]; T-states: 12 */
+			{
+				pc++;
+				uint8_t *e8 = &io[cpu.regs16.HL];
 
+				cpu.flags &= N;
+				cpu.flags |= ((*e8 - 1) == 0) ? Z: 0;
+				cpu.flags |= ((*e8 & (1 << 4)) ? H: 0;
+
+				(*e8)--;
+			}
+			break;
+		case 0x36:                /* LD [HL], n8; T-states: 12 */
+			pc++;
+			*(io + cpu.regs16.HL) = io[mem[pc++]];
+			break;
+		case 0x37:                /* SCF; T-states: 4 */
+			pc++;
+			cpu.flags &= ~N;
+			cpu.flags &= ~H;
+			cpu.flags |= C;
+			break;
+		case 0x38:               /* JR C, e8; T-states: 12/8 */
+			pc++;
+			if (cpu.flags & C)
+				pc += (int8_t) io[mem[pc]];
+			t_states (1);
+			break;
+		case 0x39:               /* ADD HL, SP; T-states: 8 */
+			pc++;
+			cpu.regs &= ~N;
+			cpu.regs |= ((cpu.regs16.HL <= 0xfff) & ((cpu.regs16.HL + cpu.regs16.SP) > 0xfff)) ? H: 0;
+			cpu.regs |= (cpu.regs16.HL < (cpu.regs16.HL + cpu.regs16.SP)) ? 0: C;
+			cpu.regs16.HL += cpu.regs16.SP;
+			t_states (8);
+			break;
+		case 0x3a:               /* LD A, [HL-]; T-states: 8 */
+			pc++;
+			cpu.regs8.A = io[cpu.regs16.HL];
+			cpu.regs16.HL--;
+			break;
+		case 0x3b:               /* DEC SP; T-states: 8 */
+			pc++;
+			cpu.regs16.SP--;
+			break;
+		case 0x3c:               /* INC A; T-states: 4 */
+			pc++;
+			cpu.flags &= ~N;
+			cpu.flags |= ((cpu.regs8.A <= 0xf) && ((cpu.regs8.A + 1) > 0xf))? H: 0;
+			cpu.flags |= ((cpu.regs8.A + 1) == 0) ? Z: 0;
+			cpu.regs8.A++;
+			t_states (4);
+			break;
+		case 0x3d:               /* DEC A; T-states: 4 */
+			pc++;
+			cpu.flags &= N;
+			cpu.flags |= ((cpu.regs8.A  - 1) == 0) ? Z: 0;
+			cpu.flags |= (cpu.regs8.A & (1 << 4)) ? H: 0;
+			cpu.regs8.A--;
+			t_states (4);
+			break;
+		case 0x3e:               /* LD A, n8; T-states: 8 */
+			pc++;
+			cpu.regs8.A = io[mem[pc++]];
+			t_states (8);
+			break;
+		case 0x3f:               /* CCF; T-states: 4 */
+			/*
+			 * TODO: if this is not correct then it need to correct.
+			 * Complement Carry Flag.
+			 */
+			pc++;
+			cpu.flags &= ~N;
+			cpu.flags &= ~H;
+			if (cpu.flags & C)
+				cpu.flags &= C;
+			else
+				cpu.flags |= C;
+			t_states (4);
+			break;
 	}
 
 	*_idx = pc;
